@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import json
@@ -61,9 +62,17 @@ if "gen_cm" not in st.session_state:
 with st.sidebar:
     st.markdown("## ⚙️ 系统配置")
 
-    api_key = st.text_input("🔑 API Key", type="password",
-                            placeholder="请输入智谱AI API Key",
-                            help="用于调用大模型进行信息抽取")
+    # 从环境变量读取预置的API Key（如果存在）
+    default_api_key = os.environ.get("ZHIPU_API_KEY", "")
+
+    api_key = st.text_input(
+        "🔑 API Key",
+        type="password",
+        value=default_api_key,
+        placeholder="已预填演示Key，可直接使用" if default_api_key else "请输入智谱AI API Key",
+        help="已自动填入演示Key，直接点击提取即可。如无效，请前往 open.bigmodel.cn 免费获取（1分钟注册）。"
+    )
+
     st.markdown("[📌 获取API Key（新用户免费）](https://open.bigmodel.cn)")
 
     st.divider()
@@ -164,7 +173,6 @@ with tab_extract:
                         base_url="https://open.bigmodel.cn/api/paas/v4/"
                     )
 
-                    # 优化后的提示词：明确要求提取相关性
                     extraction_prompt = f"""
 你是一名有10年经验的临床试验数据管理专家。
 请从以下病历文本中提取**所有**不良事件(AE)和合并用药(CM)信息，**不能遗漏任何一条**。
@@ -178,8 +186,8 @@ with tab_extract:
 6. 若字段文本未提及，填"未提及"。
 
 === 特别注意 ===
-- 文中明确写了“恶心”、“呕吐”，必须分别提取为独立的AE。
-- 文中明确写了“白细胞2.1×10⁹/L，考虑白细胞减少”，必须提取为白细胞减少。
+- 文中明确写了"恶心"、"呕吐"，必须分别提取为独立的AE。
+- 文中明确写了"白细胞2.1×10⁹/L，考虑白细胞减少"，必须提取为白细胞减少。
 - 每种药物/治疗措施都必须提取到CM中。
 
 === 输出格式 ===
@@ -296,7 +304,6 @@ with tab_ae:
         st.caption("✏️ 双击单元格修改 | 等级填数字1-5 | 状态可批量填充")
 
         ae_df = pd.DataFrame(st.session_state["ae_data"])
-        # 新增 relationship 列
         columns_order = ["id", "ae_name", "evidence", "start_date", "end_date", "ctcae_term", "grade", "relationship", "status"]
         for col in columns_order:
             if col not in ae_df.columns:
@@ -345,7 +352,6 @@ with tab_ae:
             }
         )
 
-        # 等级快捷填充
         st.caption("🎯 等级快捷填充：")
         cols_grade = st.columns(6)
         grade_map = [
@@ -364,7 +370,6 @@ with tab_ae:
                     st.session_state["ae_data"] = edited_ae.to_dict("records")
                     st.rerun()
 
-        # 相关性快捷填充
         st.caption("🔗 相关性快捷填充：")
         cols_rel = st.columns(5)
         rel_options = ["肯定有关", "可能有关", "可能无关", "无关", "待确认"]
