@@ -63,7 +63,15 @@ with st.sidebar:
     st.markdown("## ⚙️ 系统配置")
 
     # 从环境变量读取预置的API Key（如果存在）
-    default_api_key = os.environ.get("ZHIPU_API_KEY", "")
+        # 优先使用 Streamlit Secrets，回退到环境变量
+    default_api_key = ""
+    try:
+        default_api_key = st.secrets["ZHIPU_API_KEY"]
+    except:
+        try:
+            default_api_key = os.environ.get("ZHIPU_API_KEY", "")
+        except:
+            pass
 
     api_key = st.text_input(
         "🔑 API Key",
